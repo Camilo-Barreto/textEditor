@@ -26,6 +26,11 @@ int main() {
 
 	char c;
 	while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q') {
+		// Display the ascii of the key pressed but if 
+		// it is a printable character then also print the char
+		// iscntrl tests if the char is a control char.
+		// Ctrl chars are 0-31 and 127.
+		// ASCII codes 32-126 are all printable chars.
 		if (iscntrl(c)) {
 			printf("%d\n", c);
 		}
