@@ -15,8 +15,14 @@ void enableRawMode() {
 	atexit(disableRawMode);
 
 	struct termios raw = orig_termios;
-
-	raw.c_lflag &= ~(ECHO | ICANON);
+	// IXON - this will disable ctrl-S and ctrl-Q which pauses read and write
+	// ICRLN will disable ctrl-M
+	raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+	// all post processing output will be deleted
+	raw.c_oflag &= ~(OPOST);
+	raw.c_cflag |= (CS8);
+	// ISIG will disable ctrl-C and ctrl-Z
+	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
 
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
@@ -32,10 +38,11 @@ int main() {
 		// Ctrl chars are 0-31 and 127.
 		// ASCII codes 32-126 are all printable chars.
 		if (iscntrl(c)) {
-			printf("%d\n", c);
+			// \r\n will solve the problem where after each char, the cursor doesnt move back to the left but is diagonal; fixes carriage returns
+			printf("%d\r\n", c);
 		}
 		else {
-			printf("%d ('%c')\n", c, c);
+			printf("%d ('%c')\r\n", c, c);
 		}
 	}
 
