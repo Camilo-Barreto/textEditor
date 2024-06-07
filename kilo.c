@@ -57,6 +57,13 @@ char editorReadKey() {
 	return c;
 }
 
+/*** output ***/
+
+void editorRefreshScreen() {
+	// Using ANSI escape code to tell the terminal to clear the screen
+	write(STDOUT_FILENO, "\x1b[2J", 4);
+}
+
 /*** input ***/
 
 void editorProcessKeypress() {
@@ -76,6 +83,9 @@ int main() {
 	enableRawMode();
 
 	while (1) {
+		// Clear the screen
+		editorRefreshScreen();
+		// Process the keypresses
 		editorProcessKeypress();
 	}
 
