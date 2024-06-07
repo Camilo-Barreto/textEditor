@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -13,7 +14,14 @@
 
 /*** data ***/
 
-struct termios orig_termios;
+// global struct
+struct editorConfig {
+	int screenrows;
+	int screencols;
+	struct termios orig_termios;
+};
+
+struct editorConfig E;
 
 /*** terminal ***/
 
@@ -37,15 +45,15 @@ void die(const char *s) {
 }
 
 void disableRawMode() {
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1)
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig_termios) == -1)
 		die("tcsetattr");
 }
 
 void enableRawMode() {
-	if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) die("tcgetattr");
+	if (tcgetattr(STDIN_FILENO, &E.orig_termios) == -1) die("tcgetattr");
 	atexit(disableRawMode);
 
-	struct termios raw = orig_termios;
+	struct termios raw = E.orig_termios;
 	// IXON - this will disable ctrl-S and ctrl-Q which pauses read and write
 	// ICRLN will disable ctrl-M
 	raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
@@ -70,14 +78,27 @@ char editorReadKey() {
 	return c;
 }
 
+int getWindowSize(int *rows, int *cols) {
+	struct winsize ws;
+
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+		return -1;
+	}
+	else {
+		*cols = ws.ws_col;
+		*rows = ws.ws_row;
+		return 0;
+	}
+}
+
 /*** output ***/
 
 // draw tildes on the left
 void editorDrawRows() {
 	int y;
 	
-	// Not sure of terminal size so drawing 24 tildes for now
-	for (y = 0; y < 24; y++) {
+	// Draw tildes for the entire screen
+	for (y = 0; y < E.screenrows; y++) {
 		// draw the tildes and the new line escape char \r\n
 		write(STDOUT_FILENO, "~\r\n", 3);
 	}
@@ -123,8 +144,14 @@ void editorProcessKeypress() {
 
 /*** init ***/
 
+// set window size
+void initEditor() {
+	if (getWindowSize(&E.screenrows, &E.screencols) == -1) die("getWindowSize");
+}
+
 int main() {
 	enableRawMode();
+	initEditor();
 
 	while (1) {
 		// Clear the screen
