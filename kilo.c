@@ -61,6 +61,9 @@ char editorReadKey() {
 
 void editorRefreshScreen() {
 	// Using ANSI escape code to tell the terminal to clear the screen
+	// Writing 4 bytes to the terminal
+	// \x1b (an escape character or 27 in decimal)
+	// The other three are [2J 
 	write(STDOUT_FILENO, "\x1b[2J", 4);
 }
 
