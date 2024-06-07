@@ -19,6 +19,19 @@ struct termios orig_termios;
 
 // Function to print errors
 void die(const char *s) {
+	// Clear the screen on exit
+	// 1. Using ANSI escape code to tell the terminal to clear the screen
+	// Writing 4 bytes to the terminal
+	// \x1b (an escape character or 27 in decimal)
+	// The other three are [2J 
+	write(STDOUT_FILENO, "\x1b[2J", 4);
+	
+	// 2. The cursor stays at the same positions
+	// So, the following line moves it to the top left
+	// Writing 3 bytes, the escape char, [ and H
+	// where H is the cursor position
+	write(STDOUT_FILENO, "\x1b[H", 3);
+	
 	perror(s);
 	exit(1);
 }
@@ -65,6 +78,12 @@ void editorRefreshScreen() {
 	// \x1b (an escape character or 27 in decimal)
 	// The other three are [2J 
 	write(STDOUT_FILENO, "\x1b[2J", 4);
+	
+	// The cursor stays at the same positions
+	// So, the following line moves it to the top left
+	// Writing 3 bytes, the escape char, [ and H
+	// where H is the cursor position
+	write(STDOUT_FILENO, "\x1b[H", 3);
 }
 
 /*** input ***/
@@ -73,8 +92,13 @@ void editorProcessKeypress() {
 	char c = editorReadKey();
 
 	switch (c) {
+		// CTRL-Q will exit the program
 		case CTRL_KEY('q'):
-			// CTRL-Q will exit the program
+			// Clear the screen
+			write(STDOUT_FILENO, "\x1b[2J", 4);
+			
+			// Move cursor to the top left
+			write(STDOUT_FILENO, "\x1b[H", 3);
 			exit(0);
 			break;
 	}
