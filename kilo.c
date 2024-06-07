@@ -78,11 +78,38 @@ char editorReadKey() {
 	return c;
 }
 
+int getCursorPosition(int *rows, int *cols) {
+	// the n command is used to query the status information
+	// 6 asks for the cursor position
+	if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4) return -1;
+
+	printf("\r\n");
+	char c;
+	while (read(STDIN_FILENO, &c, 1) == 1) {
+		if (iscntrl(c)) {
+			printf("%d\r\n", c);
+		}
+		else {
+			printf("%d ('%c')\r\n", c, c);
+		}
+	}
+	editorReadKey();
+	
+	return -1;
+}
+
 int getWindowSize(int *rows, int *cols) {
 	struct winsize ws;
 
-	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
-		return -1;
+	if (1 || ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+		// If the previous method failed, use this one 
+		// This method places cursor on the bottom right to find the screen dimensions
+		// Done by using 2 esc chars to send cursor to the right (C) then to the bottom (B)
+		// The 999 tells by how much to move the cursor so using a large no it can be achieved
+		// The C and B keeps the curson within the screen as stated in the documentation
+		if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12) return -1;
+		editorReadKey();
+		return getCursorPosition(rows, cols);
 	}
 	else {
 		*cols = ws.ws_col;
