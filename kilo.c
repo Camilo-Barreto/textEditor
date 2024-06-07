@@ -72,6 +72,17 @@ char editorReadKey() {
 
 /*** output ***/
 
+// draw tildes on the left
+void editorDrawRows() {
+	int y;
+	
+	// Not sure of terminal size so drawing 24 tildes for now
+	for (y = 0; y < 24; y++) {
+		// draw the tildes and the new line escape char \r\n
+		write(STDOUT_FILENO, "~\r\n", 3);
+	}
+}
+
 void editorRefreshScreen() {
 	// Using ANSI escape code to tell the terminal to clear the screen
 	// Writing 4 bytes to the terminal
@@ -83,6 +94,12 @@ void editorRefreshScreen() {
 	// So, the following line moves it to the top left
 	// Writing 3 bytes, the escape char, [ and H
 	// where H is the cursor position
+	write(STDOUT_FILENO, "\x1b[H", 3);
+	
+	// draw tildes
+	editorDrawRows();
+	
+	// move cursor to the top left
 	write(STDOUT_FILENO, "\x1b[H", 3);
 }
 
