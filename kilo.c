@@ -7,6 +7,10 @@
 #include <termios.h>
 #include <unistd.h>
 
+/*** defines ***/
+
+#define CTRL_KEY(k) ((k) & 0x1f)
+
 /*** data ***/
 
 struct termios orig_termios;
@@ -43,29 +47,36 @@ void enableRawMode() {
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr");
 }
 
+// waits for a keypress, reads and returns it
+char editorReadKey() {
+	int nread;
+	char c;
+	while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
+		if (nread == -1 && errno != EAGAIN) die("read");
+	}
+	return c;
+}
+
+/*** input ***/
+
+void editorProcessKeypress() {
+	char c = editorReadKey();
+
+	switch (c) {
+		case CTRL_KEY('q'):
+			// CTRL-Q will exit the program
+			exit(0);
+			break;
+	}
+}
+
 /*** init ***/
 
 int main() {
 	enableRawMode();
 
 	while (1) {
-		char c = '\0';
-		if (read(STDIN_FILENO, &c, 1) == -1 && errno != EAGAIN) die("read");
-
-		// Display the ascii of the key pressed but if 
-		// it is a printable character then also print the char
-		// iscntrl tests if the char is a control char.
-		// Ctrl chars are 0-31 and 127.
-		// ASCII codes 32-126 are all printable chars.
-		if (iscntrl(c)) {
-			// \r\n will solve the problem where after each char, the cursor doesnt move back to the left but is diagonal; fixes carriage returns
-			printf("%d\r\n", c);
-		}
-		else {
-			printf("%d ('%c')\r\n", c, c);
-		}
-
-		if (c == 'q') break;
+		editorProcessKeypress();
 	}
 
 	return 0;
