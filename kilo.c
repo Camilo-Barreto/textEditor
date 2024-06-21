@@ -133,7 +133,14 @@ void editorDrawRows() {
 	// Draw tildes for the entire screen
 	for (y = 0; y < E.screenrows; y++) {
 		// draw the tildes and the new line escape char \r\n
-		write(STDOUT_FILENO, "~\r\n", 3);
+
+		// Draw one tilde
+		write(STDOUT_FILENO, "~", 1);
+
+		// Use an escape char until the second last line except the last one to fix the issue where the last line wont display the tilde.
+		if (y < E.screenrows - 1) {
+			write(STDOUT_FILENO, "\r\n", 2);
+		}
 	}
 }
 
