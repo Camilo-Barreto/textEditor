@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -123,6 +124,38 @@ int getWindowSize(int *rows, int *cols) {
 		return 0;
 	}
 }
+/*** append buffer ***/
+
+struct abuf {
+	// abuf is short for append buffer
+	// pointer for the buffer and the length
+	char *b;
+	int len;
+};
+
+// Macro to initialize an abuf instance with a NULL pointer and length 0
+#define ABUF_INIT {NULL, 0};
+
+
+// Function to append a string 's' of length 'len' to the buffer 'ab'
+void abAppend(struct abuf *ab, const char *s, int len) {
+	// This will reallocate the buffer to accomodate the new string
+	char *new = realloc(ab->b, ab->len + len);
+	
+	// If reallocation fails return without making changes
+	if (new == NULL) return;
+
+	// Reallocation was successfull. Copies the string s into the reallocated buffer
+	memcpy(&new[ab->len], s, len);
+	// Updates buffer pointer to newly reallocated memory
+	ab->b = new;
+	// Update the buffer length to include the length of the new string
+	ab->len += len;
+}
+
+// Function to free the memory allocated for ab
+void abFree(struct abuf *ab) {
+	free(ab->b);
 
 /*** output ***/
 
