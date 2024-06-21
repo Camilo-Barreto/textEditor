@@ -160,41 +160,46 @@ void abFree(struct abuf *ab) {
 /*** output ***/
 
 // draw tildes on the left
-void editorDrawRows() {
+void editorDrawRows(struct abuf *ab) {
 	int y;
 	
 	// Draw tildes for the entire screen
 	for (y = 0; y < E.screenrows; y++) {
-		// draw the tildes and the new line escape char \r\n
-
-		// Draw one tilde
-		write(STDOUT_FILENO, "~", 1);
+		// draw the tildes on every line
+		abAppend(ab, "~", 1);
 
 		// Use an escape char until the second last line except the last one to fix the issue where the last line wont display the tilde.
 		if (y < E.screenrows - 1) {
-			write(STDOUT_FILENO, "\r\n", 2);
+			abAppend(ab, "\r\n", 2);
 		}
 	}
 }
 
 void editorRefreshScreen() {
+	struct abuf ab = ABUF_INIT;
+
 	// Using ANSI escape code to tell the terminal to clear the screen
 	// Writing 4 bytes to the terminal
 	// \x1b (an escape character or 27 in decimal)
 	// The other three are [2J 
-	write(STDOUT_FILENO, "\x1b[2J", 4);
+	abAppend(&ab, "\x1b[2J", 4);
 	
 	// The cursor stays at the same positions
 	// So, the following line moves it to the top left
 	// Writing 3 bytes, the escape char, [ and H
 	// where H is the cursor position
-	write(STDOUT_FILENO, "\x1b[H", 3);
+	abAppend(&ab, "\x1b[H", 3);
 	
 	// draw tildes
-	editorDrawRows();
+	editorDrawRows(&ab);
 	
 	// move cursor to the top left
-	write(STDOUT_FILENO, "\x1b[H", 3);
+	abAppend(&ab, "\x1b[H", 3);
+	
+	// Using a single write instead of previous 3 writes to write the buffer to the screen for the lenght of the buffer
+	write(STDOUT_FILENO, ab.b, ab.len);
+	// Freeing up memory used by abuf
+	abFree(&ab);
 }
 
 /*** input ***/
