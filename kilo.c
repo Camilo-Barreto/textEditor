@@ -79,29 +79,35 @@ char editorReadKey() {
 }
 
 int getCursorPosition(int *rows, int *cols) {
+	char buf[32];
+	unsigned int i = 0;
+
 	// the n command is used to query the status information
 	// 6 asks for the cursor position
 	if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4) return -1;
 
-	printf("\r\n");
-	char c;
-	while (read(STDIN_FILENO, &c, 1) == 1) {
-		if (iscntrl(c)) {
-			printf("%d\r\n", c);
-		}
-		else {
-			printf("%d ('%c')\r\n", c, c);
-		}
+	while (i < sizeof(buf) - 1) {
+		if (read(STDIN_FILENO, &buf[i], 1) != 1) break;
+
+		if (buf[i] == 'R') break;
+		i++;
 	}
-	editorReadKey();
+
+	buf[i] = '\0';
 	
-	return -1;
+	// First, it checks if the buf responds with an esc sequence
+	if (buf[0] != '\x1b' || buf[1] != '[') return -1;
+	// Passes a pointer to the third character of buf, this is done to skip the '\x1b' and '[' chars.
+	// %d;%d is passed to tell it to parse the two integers and save the values to rows and cols variables.
+	if (sscanf(&buf[2], "%d;%d", rows, cols) != 2) return -1;
+
+	return 0;
 }
 
 int getWindowSize(int *rows, int *cols) {
 	struct winsize ws;
 
-	if (1 || ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
 		// If the previous method failed, use this one 
 		// This method places cursor on the bottom right to find the screen dimensions
 		// Done by using 2 esc chars to send cursor to the right (C) then to the bottom (B)
