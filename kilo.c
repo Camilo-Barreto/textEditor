@@ -11,6 +11,8 @@
 
 /*** defines ***/
 
+#define KILO_VERSION "0.0.1"
+
 #define CTRL_KEY(k) ((k) & 0x1f)
 
 /*** data ***/
@@ -165,9 +167,39 @@ void editorDrawRows(struct abuf *ab) {
 	
 	// Draw tildes for the entire screen
 	for (y = 0; y < E.screenrows; y++) {
-		// draw the tildes on every line
-		abAppend(ab, "~", 1);
+		if (y == E.screenrows / 3) {
+			char welcome[80];
 
+			// Using a safe printf function to store welcome message
+			int welcomelen = snprintf(welcome, sizeof(welcome),
+					"Kilo editor -- version %s", KILO_VERSION);
+
+			if (welcomelen > E.screencols) welcomelen = E.screencols;
+			
+			// Calculating the middle of the line
+			int padding = (E.screencols - welcomelen) / 2;
+			if (padding) {
+				abAppend(ab, "~", 1);
+				// Length of padding is decreased as tilde is drawn
+				padding--;
+			}
+			// Adding spaces until the end of padding to print the welcome message
+			while (padding--) abAppend(ab, " ", 1);
+			// Add the welcome message to the ab buffer to display the message
+			abAppend(ab, welcome, welcomelen);
+		} 
+		else {
+			// draw the tildes on every line
+			abAppend(ab, "~", 1);
+		}
+
+		// Instead of clearing the entire screen at once, clear it line by line
+		// Using ANSI escape code to tell the terminal to clear the screen
+		// Writing 3 bytes to the terminal
+		// \x1b (an escape character or 27 in decimal)
+		// The other two are [K (Note: [2J clears the entire screen at once)
+		abAppend(ab, "\x1b[K", 3);
+		
 		// Use an escape char until the second last line except the last one to fix the issue where the last line wont display the tilde.
 		if (y < E.screenrows - 1) {
 			abAppend(ab, "\r\n", 2);
@@ -180,12 +212,6 @@ void editorRefreshScreen() {
 
 	// Hide the cursor before refreshing the screen
 	abAppend(&ab, "\x1b[?25l", 6);
-
-	// Using ANSI escape code to tell the terminal to clear the screen
-	// Writing 4 bytes to the terminal
-	// \x1b (an escape character or 27 in decimal)
-	// The other three are [2J 
-	abAppend(&ab, "\x1b[2J", 4);
 	
 	// The cursor stays at the same positions
 	// So, the following line moves it to the top left
