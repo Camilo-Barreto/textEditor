@@ -15,6 +15,16 @@
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
+// Using enum for arrow keys
+// left is 1000, following constants are incremently set]
+// right is 1001, up is 1002, down is 1003
+enum editorKey {
+	ARROW_LEFT = 1000,
+  	ARROW_RIGHT,
+  	ARROW_UP,
+  	ARROW_DOWN
+};
+
 /*** data ***/
 
 // global struct
@@ -74,13 +84,37 @@ void enableRawMode() {
 }
 
 // waits for a keypress, reads and returns it
-char editorReadKey() {
+int editorReadKey() {
 	int nread;
 	char c;
 	while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
 		if (nread == -1 && errno != EAGAIN) die("read");
 	}
-	return c;
+	
+	// if an escape key is read we immediately read 2 more bytes into the seq buffer.
+	if (c == '\x1b') {
+		// seq buffer is 3 bytes long because we will be handling longer escape sequences in the future
+		char seq[3];
+		
+		// if either of these reads time out (after 0.1 secs) we can assume the user pressed an esc key and therefore we return it
+		if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
+		if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
+
+		// if the esc sequence is an arrow key esc sequence, return the corresponding wasd character
+		if (seq[0] == '[') {
+			switch (seq[1]) {
+				case 'A': return ARROW_UP;
+				case 'B': return ARROW_DOWN;
+				case 'C': return ARROW_RIGHT;
+				case 'D': return ARROW_LEFT;
+			}
+		}
+		// if the esc char is not recognised return the escape character
+		return '\x1b';
+	}
+	else {
+		return c;
+	}
 }
 
 int getCursorPosition(int *rows, int *cols) {
@@ -242,7 +276,7 @@ void editorRefreshScreen() {
 
 // Function to process awsd keys to move the cursor
 // Function called in editorProcessKeypress()
-void editorMoveCursor(char key) {
+void editorMoveCursor(int key) {
 	switch (key) {
 	case 'a':
 		E.cx--;
@@ -260,7 +294,7 @@ void editorMoveCursor(char key) {
 }
 
 void editorProcessKeypress() {
-	char c = editorReadKey();
+	int c = editorReadKey();
 
 	switch (c) {
 		// CTRL-Q will exit the program
@@ -273,10 +307,10 @@ void editorProcessKeypress() {
 			exit(0);
 			break;
 		
-		case 'a':
-		case 'w':
-		case 's':
-		case 'd':
+		case ARROW_UP:
+		case ARROW_DOWN:
+		case ARROW_LEFT:
+		case ARROW_RIGHT:
 			editorMoveCursor(c);
 			break;
 	}
