@@ -278,16 +278,16 @@ void editorRefreshScreen() {
 // Function called in editorProcessKeypress()
 void editorMoveCursor(int key) {
 	switch (key) {
-	case 'a':
+	case ARROW_LEFT:
 		E.cx--;
 		break;
-	case 'd':
+	case ARROW_RIGHT:
 		E.cx++;
 		break;
-	case 'w':
+	case ARROW_UP:
 		E.cy--;
 		break;
-	case 's':
+	case ARROW_DOWN:
 		E.cy++;
 		break;
 	}
