@@ -156,7 +156,7 @@ void abAppend(struct abuf *ab, const char *s, int len) {
 // Function to free the memory allocated for ab
 void abFree(struct abuf *ab) {
 	free(ab->b);
-
+}
 /*** output ***/
 
 // draw tildes on the left
@@ -178,6 +178,9 @@ void editorDrawRows(struct abuf *ab) {
 void editorRefreshScreen() {
 	struct abuf ab = ABUF_INIT;
 
+	// Hide the cursor before refreshing the screen
+	abAppend(&ab, "\x1b[?25l", 6);
+
 	// Using ANSI escape code to tell the terminal to clear the screen
 	// Writing 4 bytes to the terminal
 	// \x1b (an escape character or 27 in decimal)
@@ -195,6 +198,9 @@ void editorRefreshScreen() {
 	
 	// move cursor to the top left
 	abAppend(&ab, "\x1b[H", 3);
+
+	// Show the cursor that was hidden before refreshing the screen
+	abAppend(&ab, "\x1b[?25h", 6);
 	
 	// Using a single write instead of previous 3 writes to write the buffer to the screen for the lenght of the buffer
 	write(STDOUT_FILENO, ab.b, ab.len);
