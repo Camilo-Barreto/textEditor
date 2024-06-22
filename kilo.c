@@ -19,6 +19,8 @@
 
 // global struct
 struct editorConfig {
+	// cx and cy will keep track of the cursor position
+	int cx, cy;
 	int screenrows;
 	int screencols;
 	struct termios orig_termios;
@@ -222,8 +224,10 @@ void editorRefreshScreen() {
 	// draw tildes
 	editorDrawRows(&ab);
 	
-	// move cursor to the top left
-	abAppend(&ab, "\x1b[H", 3);
+	// move cursor to x=1 and y=1
+	char buf[32];
+	snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy + 1, E.cx + 1);
+	abAppend(&ab, buf, strlen(buf));
 
 	// Show the cursor that was hidden before refreshing the screen
 	abAppend(&ab, "\x1b[?25h", 6);
@@ -235,6 +239,25 @@ void editorRefreshScreen() {
 }
 
 /*** input ***/
+
+// Function to process awsd keys to move the cursor
+// Function called in editorProcessKeypress()
+void editorMoveCursor(char key) {
+	switch (key) {
+	case 'a':
+		E.cx--;
+		break;
+	case 'd':
+		E.cx++;
+		break;
+	case 'w':
+		E.cy--;
+		break;
+	case 's':
+		E.cy++;
+		break;
+	}
+}
 
 void editorProcessKeypress() {
 	char c = editorReadKey();
@@ -249,6 +272,13 @@ void editorProcessKeypress() {
 			write(STDOUT_FILENO, "\x1b[H", 3);
 			exit(0);
 			break;
+		
+		case 'a':
+		case 'w':
+		case 's':
+		case 'd':
+			editorMoveCursor(c);
+			break;
 	}
 }
 
@@ -256,6 +286,9 @@ void editorProcessKeypress() {
 
 // set window size
 void initEditor() {
+	// Initialising cursor position
+	E.cx = 0;
+	E.cy = 0; 
 	if (getWindowSize(&E.screenrows, &E.screencols) == -1) die("getWindowSize");
 }
 
