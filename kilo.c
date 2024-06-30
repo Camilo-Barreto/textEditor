@@ -23,6 +23,7 @@ enum editorKey {
   	ARROW_RIGHT,
   	ARROW_UP,
   	ARROW_DOWN,
+	DEL_KEY,
 	HOME_KEY,
 	END_KEY,
 	PAGE_UP,
@@ -111,11 +112,13 @@ int editorReadKey() {
 			
 			// HOME keys -> <esc>[1~ <esc>[7~ <esc>[H <esc>OH
 			// END key   -> <esc>[4~ <esc>[8~ <esc>[F <esc>OF
+			// DELETE key-> <esc>[3~
 			if (seq[1] >= '0' && seq[1] <= '9') {
 				if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
 				if (seq[2] == '~') {
 					switch (seq[1]) {
 						case '1': return HOME_KEY;
+						case '3': return DEL_KEY;
 						case '4': return END_KEY;
 						case '5': return PAGE_UP;
 						case '6': return PAGE_DOWN;
