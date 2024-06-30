@@ -23,6 +23,8 @@ enum editorKey {
   	ARROW_RIGHT,
   	ARROW_UP,
   	ARROW_DOWN,
+	HOME_KEY,
+	END_KEY,
 	PAGE_UP,
 	PAGE_DOWN
 };
@@ -105,13 +107,20 @@ int editorReadKey() {
 		// if the esc sequence is an arrow key esc sequence, return the corresponding wasd character
 		if (seq[0] == '[') {
 
-			// if the byte after [ is a digit we test if the 2nd char is ~. Then we test if the number before it was a 5 or a 6
+			// if the byte after [ is a digit we test if the 2nd char is ~. Then we test if the number before it was a 5 or a 6. PAGE UP is <esc>[5~ and PAGE DOWN is <esc>[6~
+			
+			// HOME keys -> <esc>[1~ <esc>[7~ <esc>[H <esc>OH
+			// END key   -> <esc>[4~ <esc>[8~ <esc>[F <esc>OF
 			if (seq[1] >= '0' && seq[1] <= '9') {
 				if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
 				if (seq[2] == '~') {
 					switch (seq[1]) {
+						case '1': return HOME_KEY;
+						case '4': return END_KEY;
 						case '5': return PAGE_UP;
 						case '6': return PAGE_DOWN;
+						case '7': return HOME_KEY;
+						case '8': return END_KEY;
 					}
 				}
 			}
@@ -121,6 +130,8 @@ int editorReadKey() {
 					case 'B': return ARROW_DOWN;
 					case 'C': return ARROW_RIGHT;
 					case 'D': return ARROW_LEFT;
+					case 'H': return HOME_KEY;
+					case 'F': return END_KEY;
 				}
 			}
 		}
@@ -329,6 +340,14 @@ void editorProcessKeypress() {
 			// Move cursor to the top left
 			write(STDOUT_FILENO, "\x1b[H", 3);
 			exit(0);
+			break;
+		
+		case HOME_KEY:
+			E.cx = 0;
+			break;
+
+		case END_KEY: 
+			E.cx = E.screencols - 1;
 			break;
 
 		case PAGE_UP:
